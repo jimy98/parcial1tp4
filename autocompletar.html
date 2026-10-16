@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entrenador de Autocompletar - Programación IV (UTN)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #080c16;
+            --surface-color: #111827;
+            --surface-border: #1f293d;
+            --surface-hover: #1c263d;
+            --accent-primary: #3b82f6;
+            --accent-gradient: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --success-bg: rgba(16, 185, 129, 0.12);
+            --error: #ef4444;
+            --error-bg: rgba(239, 68, 68, 0.12);
+            --tip-bg: rgba(245, 158, 11, 0.12);
+            --tip-border: rgba(245, 158, 11, 0.35);
+            --code-bg: #060911;
+            --code-text: #e2e8f0;
+            --radius-lg: 16px;
+            --radius-md: 10px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 16px;
+        }
+
+        header {
+            width: 100%;
+            max-width: 860px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .badge-subject {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #60a5fa;
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            padding: 6px 14px;
+            border-radius: 999px;
+            margin-bottom: 12px;
+        }
+
+        h1 {
+            font-size: 2.1rem;
+            font-weight: 800;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* Stats Bar */
+        .stats-panel {
+            width: 100%;
+            max-width: 860px;
+            background: var(--surface-color);
+            border: 1px solid var(--surface-border);
+            border-radius: var(--radius-lg);
+            padding: 16px 20px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .stat-val {
+            font-size: 1.4rem;
+            font-weight: 800;
+            margin-top: 2px;
+        }
+
+        .stat-val.correct { color: var(--success); }
+        .stat-val.wrong { color: var(--error); }
+        .stat-val.pending { color: #60a5fa; }
+        .stat-val.accuracy { color: #c084fc; }
+
+        /* Filter Categories */
+        .category-filters {
+            width: 100%;
+            max-width: 860px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+        }
+
+        .filter-btn {
+            background: var(--surface-color);
+            border: 1px solid var(--surface-border);
+            color: var(--text-muted);
+            padding: 8px 16px;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--accent-primary);
+            color: var(--text-main);
+        }
+
+        .filter-btn.active {
+            background: var(--accent-primary);
+            color: #ffffff;
+            border-color: var(--accent-primary);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        /* Progress Bar */
+        .progress-wrapper {
+            width: 100%;
+            max-width: 860px;
+            height: 6px;
+            background: #1e293b;
+            border-radius: 999px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--accent-gradient);
+            transition: width 0.3s ease;
+        }
+
+        /* Card */
+        .card {
+            width: 100%;
+            max-width: 860px;
+            background: var(--surface-color);
+            border: 1px solid var(--surface-border);
+            border-radius: var(--radius-lg);
+            padding: 30px;
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .q-cat {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            padding: 4px 10px;
+            border-radius: 6px;
+        }
+
+        .q-num {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .question-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            line-height: 1.45;
+            color: var(--text-main);
+            margin-bottom: 18px;
+        }
+
+        /* Code Block Container */
+        .code-container {
+            background: var(--code-bg);
+            border: 1px solid #1f293d;
+            border-radius: var(--radius-md);
+            padding: 22px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.95rem;
+            line-height: 1.85;
+            color: var(--code-text);
+            margin-bottom: 22px;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .code-line {
+            display: block;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        /* The fill-in input */
+        .blank-input {
+            display: inline-block;
+            font-family: 'Fira Code', monospace;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #ffffff;
+            background: #1e293b;
+            border: 2px dashed #3b82f6;
+            border-radius: 6px;
+            padding: 3px 12px;
+            min-width: 140px;
+            outline: none;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .blank-input:focus {
+            border-style: solid;
+            border-color: #60a5fa;
+            background: #1e2948;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+        }
+
+        .blank-input.correct {
+            border: 2px solid var(--success) !important;
+            background: rgba(16, 185, 129, 0.15) !important;
+            color: #34d399 !important;
+        }
+
+        .blank-input.wrong {
+            border: 2px solid var(--error) !important;
+            background: rgba(239, 68, 68, 0.15) !important;
+            color: #f87171 !important;
+        }
+
+        /* Buttons & Controls */
+        .actions-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            font-family: inherit;
+            font-size: 0.92rem;
+            font-weight: 700;
+            padding: 12px 22px;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--accent-gradient);
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(59, 130, 246, 0.45);
+        }
+
+        .btn-secondary {
+            background: #1e293b;
+            color: var(--text-main);
+            border: 1px solid var(--surface-border);
+        }
+
+        .btn-secondary:hover {
+            background: #27354f;
+        }
+
+        .btn-hint {
+            background: rgba(245, 158, 11, 0.12);
+            color: #fbbf24;
+            border: 1px solid var(--tip-border);
+        }
+
+        .btn-hint:hover {
+            background: rgba(245, 158, 11, 0.2);
+        }
+
+        .btn-reveal {
+            background: rgba(139, 92, 246, 0.12);
+            color: #c084fc;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-reveal:hover {
+            background: rgba(139, 92, 246, 0.2);
+        }
+
+        /* Clue / Hint Box (pre-answer) */
+        .hint-preview-box {
+            display: none;
+            margin-top: 18px;
+            background: var(--tip-bg);
+            border: 1px solid var(--tip-border);
+            border-radius: var(--radius-md);
+            padding: 16px 20px;
+            animation: fadeIn 0.25s ease-in-out;
+        }
+
+        .hint-preview-box.show {
+            display: block;
+        }
+
+        .hint-preview-title {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #fbbf24;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .hint-preview-text {
+            font-size: 0.92rem;
+            line-height: 1.6;
+            color: #fde68a;
+        }
+
+        /* Deep Feedback System */
+        .feedback-master {
+            margin-top: 24px;
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+            gap: 16px;
+            flex-direction: column;
+        }
+
+        .feedback-master.show {
+            display: flex;
+        }
+
+        /* Banner de resultado */
+        .result-banner {
+            border-radius: var(--radius-md);
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .result-banner.is-correct {
+            background: var(--success-bg);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+        }
+
+        .result-banner.is-wrong {
+            background: var(--error-bg);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+        }
+
+        .banner-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .banner-icon {
+            font-size: 1.8rem;
+        }
+
+        .banner-title {
+            font-size: 1.1rem;
+            font-weight: 800;
+        }
+
+        .is-correct .banner-title { color: #34d399; }
+        .is-wrong .banner-title { color: #f87171; }
+
+        .banner-user-val {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Bloque 1: Tarjeta destacada de la Respuesta Correcta */
+        .card-answer-box {
+            background: #0d1527;
+            border: 1px solid #1e2e4f;
+            border-radius: var(--radius-md);
+            padding: 18px 22px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .answer-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #94a3b8;
+        }
+
+        .answer-badge-value {
+            font-family: 'Fira Code', monospace;
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.12);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            padding: 4px 16px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-top: 4px;
+        }
+
+        /* Bloque 2: Cómo te das cuenta en el examen */
+        .card-clue-box {
+            background: rgba(245, 158, 11, 0.08);
+            border-left: 4px solid #f59e0b;
+            border-radius: 0 var(--radius-md) var(--radius-md) 0;
+            padding: 18px 20px;
+        }
+
+        .section-header-clue {
+            font-size: 1rem;
+            font-weight: 800;
+            color: #fbbf24;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .section-content-clue {
+            font-size: 0.93rem;
+            line-height: 1.65;
+            color: #fef3c7;
+        }
+
+        /* Bloque 3: Explicación Teórica */
+        .card-why-box {
+            background: #0f172a;
+            border-left: 4px solid #3b82f6;
+            border-radius: 0 var(--radius-md) var(--radius-md) 0;
+            padding: 18px 20px;
+        }
+
+        .section-header-why {
+            font-size: 1rem;
+            font-weight: 800;
+            color: #60a5fa;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .section-content-why {
+            font-size: 0.93rem;
+            line-height: 1.65;
+            color: #cbd5e1;
+        }
+
+        .section-content-why code,
+        .section-content-clue code {
+            font-family: 'Fira Code', monospace;
+            background: #1e293b;
+            color: #38bdf8;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.88rem;
+        }
+
+        /* Completed State Screen */
+        .completed-screen {
+            display: none;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .completed-screen.show {
+            display: block;
+        }
+
+        .completed-icon {
+            font-size: 3.8rem;
+            margin-bottom: 16px;
+        }
+
+        .completed-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+
+        .completed-desc {
+            color: var(--text-muted);
+            margin-bottom: 24px;
+            max-width: 520px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.6;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 640px) {
+            .stats-panel { grid-template-columns: repeat(2, 1fr); }
+            .card { padding: 20px 16px; }
+            h1 { font-size: 1.6rem; }
+            .answer-badge-value { font-size: 1.15rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav style="width: 100%; max-width: 860px; display: flex; justify-content: flex-end; margin-bottom: 14px;">
+        <a href="index.html" style="display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; color: #94a3b8; background: #111827; border: 1px solid #1f293d; padding: 7px 16px; border-radius: 999px; text-decoration: none; transition: all 0.2s;" onmouseover="this.style.color='#f8fafc'; this.style.borderColor='#3b82f6'" onmouseout="this.style.color='#94a3b8'; this.style.borderColor='#1f293d'">
+            <span>📝 Ir al Simulador de Examen (80 preguntas)</span> &rarr;
+        </a>
+    </nav>
+
+    <header>
+        <span class="badge-subject">UTN TUP • Programación IV • 1° Parcial</span>
+        <h1>Simulador de Autocompletar Código</h1>
+        <p class="subtitle">Aprende qué palabra va en cada espacio, por qué se usa y <strong>cómo darte cuenta en el examen</strong>.</p>
+    </header>
+
+    <!-- Stats -->
+    <div class="stats-panel">
+        <div class="stat-item">
+            <span class="stat-label">Pendientes</span>
+            <span class="stat-val pending" id="stat-pending">25</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Correctas</span>
+            <span class="stat-val correct" id="stat-correct">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Incorrectas</span>
+            <span class="stat-val wrong" id="stat-wrong">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Precisión</span>
+            <span class="stat-val accuracy" id="stat-accuracy">0%</span>
+        </div>
+    </div>
+
+    <!-- Filter Buttons -->
+    <div class="category-filters" id="category-filters">
+        <button class="filter-btn active" onclick="setCategory('todas')">Todas (25)</button>
+        <button class="filter-btn" onclick="setCategory('Express & HTTP')">Express & HTTP</button>
+        <button class="filter-btn" onclick="setCategory('MySQL')">MySQL</button>
+        <button class="filter-btn" onclick="setCategory('Validaciones')">Validaciones</button>
+        <button class="filter-btn" onclick="setCategory('Arrays en Memoria')">Arrays</button>
+        <button class="filter-btn" onclick="setCategory('Git & REST')">Git & REST</button>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-wrapper">
+        <div class="progress-fill" id="progress-fill"></div>
+    </div>
+
+    <!-- Active Question Card -->
+    <div class="card" id="quiz-card">
+        <div class="card-header">
+            <span class="q-cat" id="q-category">Express & HTTP</span>
+            <span class="q-num" id="q-number">Pregunta 1 de 25</span>
+        </div>
+
+        <div class="question-title" id="q-title">Cargando pregunta...</div>
+
+        <!-- Code Block -->
+        <div class="code-container" id="code-box">
+            <!-- Code lines with input inserted dynamically -->
+        </div>
+
+        <div class="actions-row">
+            <button class="btn btn-primary" id="btn-submit" onclick="checkAnswer()">Comprobar (Enter)</button>
+            <button class="btn btn-hint" id="btn-hint" onclick="toggleHint()">💡 ¿Cómo me doy cuenta?</button>
+            <button class="btn btn-reveal" id="btn-reveal" onclick="revealAnswer()">👁️ Ver respuesta</button>
+            <button class="btn btn-secondary" id="btn-skip" onclick="skipQuestion()">Omitir</button>
+        </div>
+
+        <!-- Clue / Hint Box (pre-answer) -->
+        <div class="hint-preview-box" id="hint-preview-box">
+            <div class="hint-preview-title">🔍 Pista para darte cuenta:</div>
+            <div class="hint-preview-text" id="hint-preview-text"></div>
+        </div>
+
+        <!-- Master Feedback System (Shown after answering or revealing) -->
+        <div class="feedback-master" id="feedback-master">
+            <!-- Status banner -->
+            <div class="result-banner" id="result-banner">
+                <div class="banner-left">
+                    <span class="banner-icon" id="banner-icon">✅</span>
+                    <div>
+                        <div class="banner-title" id="banner-title">¡Respuesta Correcta!</div>
+                        <div class="banner-user-val" id="banner-user-val"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bloque 1: La respuesta correcta -->
+            <div class="card-answer-box">
+                <div>
+                    <div class="answer-label">Palabra que completa el espacio:</div>
+                    <div class="answer-badge-value" id="badge-correct-answer">params</div>
+                </div>
+                <div style="text-align: right;">
+                    <div class="answer-label">Concepto evaluado:</div>
+                    <div style="font-weight: 700; color: #f8fafc; margin-top: 4px;" id="badge-concept-name">req.params</div>
+                </div>
+            </div>
+
+            <!-- Bloque 2: ¿Cómo te das cuenta en el examen? -->
+            <div class="card-clue-box">
+                <div class="section-header-clue">
+                    <span>💡</span>
+                    <span>¿CÓMO TE DAS CUENTA CUÁL ES? (EL TRUCO PARA EL EXAMEN)</span>
+                </div>
+                <div class="section-content-clue" id="clue-detail-text"></div>
+            </div>
+
+            <!-- Bloque 3: ¿Por qué es esta respuesta? -->
+            <div class="card-why-box">
+                <div class="section-header-why">
+                    <span>📖</span>
+                    <span>¿POR QUÉ ES ESTA? (EXPLICACIÓN TEÓRICA)</span>
+                </div>
+                <div class="section-content-why" id="why-detail-text"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen when all questions are done -->
+    <div class="card completed-screen" id="completed-screen">
+        <div class="completed-icon" id="completed-icon">🏆</div>
+        <div class="completed-title" id="completed-title">¡Entrenamiento Completado!</div>
+        <p class="completed-desc" id="completed-desc"></p>
+        <div class="actions-row" style="justify-content: center;">
+            <button class="btn btn-primary" onclick="restartQuiz()">Reiniciar Todo</button>
+            <button class="btn btn-secondary" id="btn-retry-failed" onclick="retryFailedOnly()" style="display:none;">Reintentar solo errores</button>
+        </div>
+    </div>
+
+    <script>
+        // --- BASE DE PREGUNTAS ENRIQUECIDA CON TRUCOS Y EXPLICACIONES ---
+        const ALL_QUESTIONS = [
+            // 1. Express & HTTP
+            {
+                id: 1,
+                category: "Express & HTTP",
+                title: "Obtención del parámetro variable de una ruta dinámica (ej. /productos/5):",
+                codeBefore: "app.get('/productos/:id', (req, res) => {\n  const id = Number(req.",
+                codeAfter: ".id);\n  res.send({ id });\n});",
+                answers: ["params"],
+                placeholder: "req.______",
+                concept: "req.params (Path Parameter)",
+                clue: "Fíjate en la ruta <code>'/productos/:id'</code>: siempre que veas <strong>dos puntos (<code>:</code>)</strong> en la definición de la URL de Express, significa que esa parte es variable. Para capturar esa variable, siempre se usa <code>req.params.[nombre]</code>.",
+                explanation: "Representa un <strong>parámetro de ruta</strong> (Path parameter). En el estándar REST, se utiliza cuando el dato forma parte de la dirección misma del recurso y sirve para identificar un único elemento (ej. el ID de un producto)."
+            },
+            {
+                id: 2,
+                category: "Express & HTTP",
+                title: "Lectura de filtros opcionales en la URL (ej. /productos?precioMin=10&orden=asc):",
+                codeBefore: "app.get('/productos', (req, res) => {\n  // Extraer el filtro opcional de la URL\n  const { precioMin } = req.",
+                codeAfter: ";\n  res.send(filtrar(precioMin));\n});",
+                answers: ["query"],
+                placeholder: "req.______",
+                concept: "req.query (Query String)",
+                clue: "Te das cuenta porque se trata de <strong>filtros, búsquedas o valores opcionales</strong> (como <code>precioMin</code>). En las URLs reales van después del signo de interrogación <code>?</code> (ej. <code>?precioMin=10</code>). En Express todo lo que viene después del <code>?</code> se guarda en <code>req.query</code>.",
+                explanation: "La <strong>Query String</strong> está pensada según las mejores prácticas REST para modificar la vista de una colección (filtrar, ordenar, paginar) sin cambiar la URL raíz del recurso."
+            },
+            {
+                id: 3,
+                category: "Express & HTTP",
+                title: "Extracción de los datos JSON enviados por el cliente al crear un recurso (POST):",
+                codeBefore: "app.post('/productos', (req, res) => {\n  // Extraer los datos enviados en el payload JSON\n  const { nombre, cantidad, precio } = req.",
+                codeAfter: ";\n  // ... guardar producto\n});",
+                answers: ["body"],
+                placeholder: "req.______",
+                concept: "req.body (Cuerpo de la Petición)",
+                clue: "Te das cuenta por 2 pistas:<br>1) Es un método <code>app.post(...)</code> o <code>app.put(...)</code>.<br>2) Se extraen campos como <code>{ nombre, cantidad, precio }</code> que forman un objeto completo. Como estos datos no van en la URL, siempre viajan dentro del cuerpo (<code>req.body</code>).",
+                explanation: "El <strong>body</strong> es el contenedor del paquete HTTP donde viaja el payload JSON enviado desde el cliente (por ejemplo, desde un formulario o una aplicación móvil)."
+            },
+            {
+                id: 4,
+                category: "Express & HTTP",
+                title: "Middleware fundamental para parsear cuerpos de petición en formato JSON:",
+                codeBefore: "const app = express();\n\n// Middleware obligatorio para interpretar JSON en el req.body\napp.use(express.",
+                codeAfter: "());",
+                answers: ["json"],
+                placeholder: "express.______",
+                concept: "express.json()",
+                clue: "Ves <code>app.use(express.______())</code> en las primeras líneas de <code>index.js</code>. Si en el comentario o en el código habla de <strong>interpretar body</strong> o <strong>formato JSON</strong>, el middleware de Express siempre se llama <code>json</code>.",
+                explanation: "Node.js recibe los datos como un flujo de bytes planos. <code>express.json()</code> intercepta la petición, lee el texto en formato JSON y lo convierte a un objeto JavaScript para que puedas usarlo en <code>req.body</code>."
+            },
+            {
+                id: 5,
+                category: "Express & HTTP",
+                title: "Código de estado HTTP tras la CREACIÓN exitosa de un recurso en un método POST:",
+                codeBefore: "app.post('/productos', (req, res) => {\n  const nuevo = crearProducto(req.body);\n  res.status(",
+                codeAfter: ").send(nuevo);\n});",
+                answers: ["201"],
+                placeholder: "código HTTP",
+                concept: "201 Created",
+                clue: "Te das cuenta porque el verbo es <code>POST</code> y la acción fue <strong>crear satisfactoriamente</strong> un nuevo elemento. En REST, cuando se crea algo nuevo NUNCA se responde 200, siempre es <strong>201</strong>.",
+                explanation: "El código <strong>201 (Created)</strong> le indica explícitamente al cliente que la petición tuvo éxito y que como consecuencia se ha creado y guardado un nuevo recurso en la base de datos."
+            },
+            {
+                id: 6,
+                category: "Express & HTTP",
+                title: "Código de estado HTTP cuando el producto o ID solicitado no existe:",
+                codeBefore: "const producto = productos.find(p => p.id === id);\nif (!producto) {\n  return res.status(",
+                codeAfter: ").send('Producto no encontrado');\n}",
+                answers: ["404"],
+                placeholder: "código HTTP",
+                concept: "404 Not Found",
+                clue: "Ves la validación <code>if (!producto)</code> o un mensaje que dice <em>'no encontrado'</em>. Siempre que un ID o ruta no exista en el sistema, el código universal es <strong>404</strong>.",
+                explanation: "El código <strong>404 (Not Found)</strong> es un error de la familia 4xx (error del cliente). Significa que el servidor procesó bien la petición, pero el identificador pedido no existe en el origen."
+            },
+            {
+                id: 7,
+                category: "Express & HTTP",
+                title: "Código de estado cuando el cliente envía datos inválidos (Bad Request):",
+                codeBefore: "if (precioMin < 0 || isNaN(precioMin)) {\n  return res.status(",
+                codeAfter: ").send('Parámetro inválido');\n}",
+                answers: ["400"],
+                placeholder: "código HTTP",
+                concept: "400 Bad Request",
+                clue: "Fíjate que se está comprobando si un valor es negativo (<code>< 0</code>), no es número (<code>isNaN</code>) o fallaron las validaciones. Cuando el cliente manda datos mal formados o que rompen las reglas de negocio, siempre es <strong>400</strong>.",
+                explanation: "<strong>400 (Bad Request)</strong> indica que el servidor no puede procesar la petición porque la sintaxis o los valores enviados por el cliente son inválidos o violan las restricciones esperadas."
+            },
+            {
+                id: 8,
+                category: "Express & HTTP",
+                title: "Código de estado cuando un DELETE es exitoso y no se retorna contenido en el cuerpo:",
+                codeBefore: "// Borrado exitoso sin cuerpo de respuesta\nres.status(",
+                codeAfter: ").send();",
+                answers: ["204"],
+                placeholder: "código HTTP",
+                concept: "204 No Content",
+                clue: "Ves que es una eliminación y la llamada es <code>.send()</code> con los <strong>paréntesis vacíos</strong> (sin enviar ningún objeto o texto). El código estándar para 'éxito sin nada para devolver' es <strong>204</strong>.",
+                explanation: "<strong>204 (No Content)</strong> avisa que la acción se ejecutó con éxito (por ejemplo, el recurso se borró), pero el servidor deliberadamente no envía ningún payload JSON para optimizar la red."
+            },
+            {
+                id: 9,
+                category: "Express & HTTP",
+                title: "Instanciación de un Router modular en Express:",
+                codeBefore: "import express from 'express';\n\n// Crear un mini-enrutador para aislar las rutas de productos\nconst router = express.",
+                codeAfter: "();\n\nexport default router;",
+                answers: ["Router"],
+                placeholder: "express.______",
+                concept: "express.Router()",
+                clue: "Estás dentro de un archivo separado (ej. <code>productos.js</code> o <code>categorias.js</code>) y ves <code>const router = express.______();</code>. El constructor siempre es <strong>Router</strong> con la <strong>'R' mayúscula</strong>.",
+                explanation: "<code>express.Router()</code> permite crear enrutadores modulares e independientes para no amontonar todas las rutas en el archivo <code>index.js</code> principal."
+            },
+
+            // 2. MySQL
+            {
+                id: 10,
+                category: "MySQL",
+                title: "Comodín utilizado en sentencias preparadas para prevenir Inyecciones SQL:",
+                codeBefore: "const id = req.params.id;\n// Usar marcador de posición seguro\nconst [filas] = await db.execute(\n  'SELECT * FROM productos WHERE id = ",
+                codeAfter: "',\n  [id]\n);",
+                answers: ["?"],
+                placeholder: "signo",
+                concept: "Placeholder '?' (Sentencias preparadas)",
+                clue: "Ves una consulta SQL con <code>WHERE columna = ______</code> y a continuación un segundo array con los valores <code>[id]</code>. En MySQL con Node.js el único comodín de reemplazo seguro es el signo de interrogación <strong><code>?</code></strong>.",
+                explanation: "Al usar <code>?</code>, el motor de base de datos compila la consulta primero y luego trata al parámetro como un dato literal y nunca como código ejecutable, neutralizando cualquier intento de <strong>Inyección SQL</strong>."
+            },
+            {
+                id: 11,
+                category: "MySQL",
+                title: "Propiedad de MySQL para conocer el ID asignado a una fila autoincremental recién creada:",
+                codeBefore: "const [result] = await db.execute(\n  'INSERT INTO productos (nombre, cantidad) VALUES (?, ?)',\n  [nombre, cantidad]\n);\n\nconst nuevoId = result.",
+                codeAfter: ";",
+                answers: ["insertId"],
+                placeholder: "propiedad",
+                concept: "result.insertId",
+                clue: "La consulta previa es un <strong><code>INSERT INTO</code></strong>. En los resultados de inserción de MySQL, el número de ID autoincremental recién generado siempre se guarda en la propiedad <strong><code>insertId</code></strong>.",
+                explanation: "Como la base de datos es la que autoincrementa la clave primaria (1, 2, 3...), el cliente Node necesita saber qué número le tocó al nuevo registro mediante <code>result.insertId</code>."
+            },
+            {
+                id: 12,
+                category: "MySQL",
+                title: "Propiedad de MySQL para verificar si un UPDATE o DELETE modificó alguna fila:",
+                codeBefore: "const [result] = await db.execute('DELETE FROM productos WHERE id = ?', [id]);\n\nif (result.",
+                codeAfter: " === 0) {\n  return res.status(404).send('Producto no encontrado');\n}",
+                answers: ["affectedRows"],
+                placeholder: "propiedad",
+                concept: "result.affectedRows",
+                clue: "La consulta previa es un <strong><code>UPDATE</code> o <code>DELETE</code></strong> y se evalúa si es igual a cero (<code>=== 0</code>). La propiedad que cuenta cuántas filas fueron alteradas en la base de datos se llama <strong><code>affectedRows</code></strong>.",
+                explanation: "Si <code>affectedRows === 0</code>, significa que la sentencia SQL se ejecutó pero ninguna fila coincidía con el ID dado (por lo tanto, el producto no existía y corresponde retornar 404)."
+            },
+            {
+                id: 13,
+                category: "MySQL",
+                title: "Desestructuración del resultado de una consulta con db.execute():",
+                codeBefore: "// db.execute devuelve [filas, columnas]\nconst [ ",
+                codeAfter: " ] = await db.execute('SELECT * FROM productos');\nres.send(productos);",
+                answers: ["productos", "rows", "filas"],
+                placeholder: "variable",
+                concept: "Destructuring [filas]",
+                clue: "Fíjate en lo que envía abajo: <code>res.send(productos)</code>. Y a la izquierda ves corchetes desestructurando: <code>const [ ______ ] = await db.execute(...)</code>. La variable debe llamarse <strong>productos</strong> (o <strong>rows</strong>).",
+                explanation: "<code>db.execute()</code> retorna una tupla <code>[filas, metadatos]</code>. Mediante la desestructuración con corchetes <code>[productos]</code>, nos quedamos directamente con el array que contiene los registros de la tabla."
+            },
+
+            // 3. Validaciones
+            {
+                id: 14,
+                category: "Validaciones",
+                title: "Función de express-validator para validar el ID que viene en la ruta (URL):",
+                codeBefore: "import { param, body, query } from 'express-validator';\n\nexport const validarId = ",
+                codeAfter: "('id').isInt({ min: 1 });",
+                answers: ["param"],
+                placeholder: "función",
+                concept: "param() de express-validator",
+                clue: "El campo a validar es <code>'id'</code>. ¿Dónde viaja el ID? En la ruta (<code>req.params</code>). Por eso la función correspondiente de <code>express-validator</code> es <strong><code>param</code></strong>.",
+                explanation: "<code>express-validator</code> provee funciones espejo para cada fuente de datos: <code>param()</code> para <code>req.params</code>, <code>body()</code> para <code>req.body</code> y <code>query()</code> para <code>req.query</code>."
+            },
+            {
+                id: 15,
+                category: "Validaciones",
+                title: "Función que recopila los errores de validación ocurridos en la petición:",
+                codeBefore: "export const verificarValidaciones = (req, res, next) => {\n  const resultado = ",
+                codeAfter: "(req);\n  if (!resultado.isEmpty()) {\n    return res.status(400).json({ errores: resultado.array() });\n  }\n  next();\n};",
+                answers: ["validationResult"],
+                placeholder: "función(req)",
+                concept: "validationResult(req)",
+                clue: "En el middleware de validación ves <code>const resultado = ______(req);</code> y luego se revisa si está vacío con <code>isEmpty()</code>. La función que procesa el <code>req</code> siempre se llama <strong><code>validationResult</code></strong>.",
+                explanation: "<code>validationResult(req)</code> analiza los metadatos de validación que los middlewares previos adosaron a la petición <code>req</code> y genera un objeto contenedor con todos los mensajes de error."
+            },
+            {
+                id: 16,
+                category: "Validaciones",
+                title: "Método para verificar si NO se produjeron errores de validación:",
+                codeBefore: "const resultado = validationResult(req);\n\n// Si NO está vacío, hubo fallos\nif (!resultado.",
+                codeAfter: "()) {\n  return res.status(400).send('Datos incorrectos');\n}",
+                answers: ["isEmpty"],
+                placeholder: "método()",
+                concept: "isEmpty()",
+                clue: "Fíjate en el signo de exclamación <strong><code>!</code></strong> al principio: <code>if (!resultado.______())</code>. En español se lee: <em>'Si el resultado NO está vacío'</em>. El método en inglés para 'está vacío' es <strong><code>isEmpty</code></strong>.",
+                explanation: "<code>isEmpty()</code> devuelve <code>true</code> si no hay errores registrados. Por lo tanto, <code>!resultado.isEmpty()</code> significa que existen errores y se debe cortar la ejecución con un status 400."
+            },
+            {
+                id: 17,
+                category: "Validaciones",
+                title: "Llamada necesaria en un middleware para ceder el control al siguiente controlador:",
+                codeBefore: "export const miMiddleware = (req, res, next) => {\n  // Validación exitosa, continuar al endpoint:\n  ",
+                codeAfter: "();\n};",
+                answers: ["next"],
+                placeholder: "______();",
+                concept: "next()",
+                clue: "Fíjate en los parámetros de la función: <code>(req, res, next)</code>. Si el middleware no responde un error, para que la petición no se quede colgada debe llamar a <strong><code>next()</code></strong>.",
+                explanation: "Express funciona mediante una cadena de middlewares (cadena de responsabilidad). Llamar a <code>next()</code> le dice a Express que este paso terminó correctamente y que puede ejecutar el siguiente handler."
+            },
+
+            // 4. Arrays en Memoria
+            {
+                id: 18,
+                category: "Arrays en Memoria",
+                title: "Método funcional de JavaScript para encontrar un único elemento por su ID:",
+                codeBefore: "const id = Number(req.params.id);\n// Buscar un único producto en el array\nconst producto = productos.",
+                codeAfter: "(p => p.id === id);\n\nif (!producto) return res.status(404).send();",
+                answers: ["find"],
+                placeholder: "método",
+                concept: "Array.prototype.find()",
+                clue: "La variable de la izquierda es singular: <code>const producto = ...</code> y abajo verifica si no existe: <code>if (!producto)</code>. En JavaScript, el método para buscar <strong>un único elemento</strong> por condición es <strong><code>find</code></strong>.",
+                explanation: "<code>find()</code> itera el array y devuelve el primer elemento que haga verdadera la condición del callback, o <code>undefined</code> si no existe."
+            },
+            {
+                id: 19,
+                category: "Arrays en Memoria",
+                title: "Método funcional para obtener un subconjunto de productos o borrar uno por ID:",
+                codeBefore: "const id = Number(req.params.id);\n// Quitar el producto conservando todos los que tengan id distinto:\nproductos = productos.",
+                codeAfter: "(p => p.id !== id);",
+                answers: ["filter"],
+                placeholder: "método",
+                concept: "Array.prototype.filter()",
+                clue: "Ves una condición de desigualdad <code>p.id !== id</code> asignándose nuevamente a la lista: <code>productos = productos.____(...)</code>. La forma clásica de filtrar o eliminar en memoria conservando los demás es <strong><code>filter</code></strong>.",
+                explanation: "<code>filter()</code> crea un nuevo arreglo con todos los elementos que devuelvan <code>true</code>. Al pedir que conserve los que tienen ID distinto al buscado, el resultado es que el elemento indicado queda eliminado."
+            },
+
+            // 5. Git & REST
+            {
+                id: 20,
+                category: "Git & REST",
+                title: "En GitHub (hacer fork, push y pull request), el flujo de trabajo se denomina Administrador-________:",
+                codeBefore: "// Flujo de colaboración distribuida:\nconst flujoGit = 'Administrador-",
+                codeAfter: "';",
+                answers: ["integracion", "integración"],
+                placeholder: "palabra",
+                concept: "Flujo Administrador-Integración",
+                clue: "Piensa en cómo funciona GitHub: tú haces fork, subes a tu copia y mandas un Pull Request. El dueño del proyecto es el que <strong>integra</strong> tu código. La palabra que falta es <strong>integracion</strong>.",
+                explanation: "En el flujo <strong>Administrador-Integración</strong>, solo el líder del proyecto tiene permiso de escritura en el repositorio oficial (blessed repo). Los contribuidores empujan a sus propios repositorios públicos y el admin integra los cambios."
+            },
+            {
+                id: 21,
+                category: "Git & REST",
+                title: "Comando Git para aplicar un parche creado con format-patch como un commit:",
+                codeBefore: "# Aplicar un archivo .patch recibido por email\ngit ",
+                codeAfter: " 0001-nuevo-endpoint.patch",
+                answers: ["am"],
+                placeholder: "subcomando",
+                concept: "git am",
+                clue: "El comando tiene solo 2 letras y se usa para aplicar archivos <code>.patch</code> generados con <code>git format-patch</code>. Proviene de <em>Apply Mailbox</em>: es <strong><code>am</code></strong>.",
+                explanation: "<code>git am</code> lee parches formateados al estilo correo electrónico y los aplica directamente creando los commits con su autor, fecha y mensaje originales intactos."
+            },
+            {
+                id: 22,
+                category: "Git & REST",
+                title: "Principio REST que establece que el servidor no guarda sesiones de usuario en su memoria RAM:",
+                codeBefore: "// Restricción REST:\nconst principio = '",
+                codeAfter: "'; // Sin estado",
+                answers: ["stateless", "sin estado"],
+                placeholder: "principio",
+                concept: "Stateless (Sin Estado)",
+                clue: "Al lado en el comentario dice <code>// Sin estado</code>. En la teoría de Roy Fielding sobre arquitecturas REST, este principio en inglés se llama <strong>stateless</strong>.",
+                explanation: "En una arquitectura <strong>Stateless</strong>, cada petición del cliente debe contener toda la información requerida (ej. token JWT). El servidor no guarda sesiones en memoria, lo que permite una escalabilidad horizontal masiva."
+            },
+            {
+                id: 23,
+                category: "Git & REST",
+                title: "Propiedad de los métodos GET, PUT y DELETE donde múltiples ejecuciones idénticas producen el mismo resultado:",
+                codeBefore: "// GET, PUT, DELETE poseen:\nconst propiedad = '",
+                codeAfter: "';",
+                answers: ["idempotencia", "idempotente"],
+                placeholder: "propiedad",
+                concept: "Idempotencia",
+                clue: "Si ejecutas <code>DELETE /productos/5</code> una vez o 10 veces, el producto 5 queda eliminado igual sin duplicar efectos raros. Esta propiedad matemática se llama <strong>idempotencia</strong>.",
+                explanation: "La <strong>idempotencia</strong> garantiza que realizar la misma petición 1 o N veces deja al servidor en el mismo estado final. POST no es idempotente porque cada ejecución crea un nuevo registro duplicado."
+            },
+            {
+                id: 24,
+                category: "Git & REST",
+                title: "Restricción opcional en REST que permite al servidor enviar código ejecutable (ej. scripts JS) al cliente:",
+                codeBefore: "// La única restricción REST opcional es:\nconst restriccion = 'Codigo bajo ",
+                codeAfter: "';",
+                answers: ["demanda"],
+                placeholder: "palabra",
+                concept: "Código bajo demanda (Code-on-demand)",
+                clue: "Pregunta clásica de examen: <em>¿Cuál es la única restricción opcional de REST?</em> Siempre se llama <strong>'Código bajo demanda'</strong> (Code on demand). Falta la palabra <strong>demanda</strong>.",
+                explanation: "Es la única de las 6 restricciones de Roy Fielding que no es obligatoria para considerar que una API es RESTful. Permite enviar applets o scripts al cliente para extender temporalmente su funcionalidad."
+            },
+            {
+                id: 25,
+                category: "Git & REST",
+                title: "Acrónimo del principio REST que incluye hipervínculos dinámicos en las respuestas:",
+                codeBefore: "// Hipermedios como motor del estado de la aplicación:\nconst acronimo = '",
+                codeAfter: "';",
+                answers: ["hateoas"],
+                placeholder: "acrónimo",
+                concept: "HATEOAS",
+                clue: "Las siglas en inglés corresponden a <em>Hypermedia As The Engine Of Application State</em>. Es el nivel 3 del modelo de madurez de Richardson: <strong>hateoas</strong>.",
+                explanation: "<strong>HATEOAS</strong> prescribe que las respuestas del servidor incluyan enlaces (links) a las acciones que el cliente puede realizar a continuación, permitiendo navegar la API sin acoplarse rígidamente a URLs fijas."
+            }
+        ];
+
+        // --- APP STATE ---
+        let currentQuestions = [...ALL_QUESTIONS];
+        let currentIndex = 0;
+        let correctCount = 0;
+        let wrongCount = 0;
+        let failedQuestions = [];
+        let isWaitingNext = false;
+        let selectedCategory = 'todas';
+
+        function updateStats() {
+            const total = currentQuestions.length;
+            const answered = correctCount + wrongCount;
+            const pending = total - answered;
+            const accuracy = answered > 0 ? Math.round((correctCount / answered) * 100) : 0;
+
+            document.getElementById('stat-pending').textContent = pending;
+            document.getElementById('stat-correct').textContent = correctCount;
+            document.getElementById('stat-wrong').textContent = wrongCount;
+            document.getElementById('stat-accuracy').textContent = `${accuracy}%`;
+
+            const progressPct = total > 0 ? (answered / total) * 100 : 0;
+            document.getElementById('progress-fill').style.width = `${progressPct}%`;
+        }
+
+        function loadQuestion() {
+            if (currentIndex >= currentQuestions.length) {
+                showCompletedScreen();
+                return;
+            }
+
+            isWaitingNext = false;
+            const q = currentQuestions[currentIndex];
+
+            document.getElementById('quiz-card').style.display = 'block';
+            document.getElementById('completed-screen').classList.remove('show');
+            document.getElementById('q-category').textContent = q.category;
+            document.getElementById('q-number').textContent = `Pregunta ${currentIndex + 1} de ${currentQuestions.length}`;
+            document.getElementById('q-title').textContent = q.title;
+
+            // Reset Pre-answer hint box
+            const hintBox = document.getElementById('hint-preview-box');
+            hintBox.className = 'hint-preview-box';
+            hintBox.style.display = 'none';
+
+            // Reset Master Feedback Box
+            const fbMaster = document.getElementById('feedback-master');
+            fbMaster.className = 'feedback-master';
+            fbMaster.style.display = 'none';
+
+            // Reset buttons
+            const submitBtn = document.getElementById('btn-submit');
+            submitBtn.textContent = 'Comprobar (Enter)';
+            submitBtn.disabled = false;
+            document.getElementById('btn-hint').style.display = 'inline-flex';
+            document.getElementById('btn-reveal').style.display = 'inline-flex';
+
+            // Render Code with Input
+            const codeBox = document.getElementById('code-box');
+            codeBox.innerHTML = `
+                <span class="code-line">${escapeHtml(q.codeBefore)}<input type="text" id="blank-input" class="blank-input" placeholder="${q.placeholder}" autocomplete="off" spellcheck="false">${escapeHtml(q.codeAfter)}</span>
+            `;
+
+            const input = document.getElementById('blank-input');
+            input.focus();
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (!isWaitingNext) {
+                        checkAnswer();
+                    } else {
+                        nextQuestion();
+                    }
+                }
+            });
+
+            updateStats();
+        }
+
+        function toggleHint() {
+            const hintBox = document.getElementById('hint-preview-box');
+            const q = currentQuestions[currentIndex];
+            if (hintBox.style.display === 'block') {
+                hintBox.style.display = 'none';
+            } else {
+                document.getElementById('hint-preview-text').innerHTML = q.clue;
+                hintBox.style.display = 'block';
+            }
+        }
+
+        function revealAnswer() {
+            const q = currentQuestions[currentIndex];
+            const input = document.getElementById('blank-input');
+            input.value = q.answers[0];
+            failedQuestions.push(q);
+            wrongCount++;
+            renderFeedback(false, "Respuesta revelada manualmente");
+        }
+
+        function checkAnswer() {
+            if (isWaitingNext) {
+                nextQuestion();
+                return;
+            }
+
+            const q = currentQuestions[currentIndex];
+            const input = document.getElementById('blank-input');
+            const userVal = input.value.trim().toLowerCase();
+
+            if (!userVal) {
+                input.focus();
+                return;
+            }
+
+            const isCorrect = q.answers.some(ans => ans.toLowerCase() === userVal);
+
+            if (isCorrect) {
+                correctCount++;
+            } else {
+                wrongCount++;
+                failedQuestions.push(q);
+            }
+
+            renderFeedback(isCorrect, input.value);
+        }
+
+        function renderFeedback(isCorrect, userEnteredText) {
+            const q = currentQuestions[currentIndex];
+            const input = document.getElementById('blank-input');
+            input.disabled = true;
+
+            // Ocultar pre-hint box si estaba abierto
+            document.getElementById('hint-preview-box').style.display = 'none';
+            document.getElementById('btn-hint').style.display = 'none';
+            document.getElementById('btn-reveal').style.display = 'none';
+
+            // Master Box
+            const fbMaster = document.getElementById('feedback-master');
+            fbMaster.className = 'feedback-master show';
+            fbMaster.style.display = 'flex';
+
+            const banner = document.getElementById('result-banner');
+            const icon = document.getElementById('banner-icon');
+            const title = document.getElementById('banner-title');
+            const userValEl = document.getElementById('banner-user-val');
+
+            if (isCorrect) {
+                input.classList.add('correct');
+                banner.className = 'result-banner is-correct';
+                icon.textContent = '🎉';
+                title.textContent = '¡Excelente! Respuesta Correcta';
+                userValEl.textContent = `Tu respuesta: "${userEnteredText}"`;
+            } else {
+                input.classList.add('wrong');
+                banner.className = 'result-banner is-wrong';
+                icon.textContent = '❌';
+                title.textContent = 'Respuesta Incorrecta';
+                userValEl.textContent = `Escribiste: "${userEnteredText}" (no coincide con lo esperado)`;
+            }
+
+            // Datos de los bloques explicativos
+            document.getElementById('badge-correct-answer').textContent = q.answers[0];
+            document.getElementById('badge-concept-name').textContent = q.concept;
+            document.getElementById('clue-detail-text').innerHTML = q.clue;
+            document.getElementById('why-detail-text').innerHTML = q.explanation;
+
+            isWaitingNext = true;
+            const submitBtn = document.getElementById('btn-submit');
+            submitBtn.textContent = 'Siguiente Pregunta (Enter) →';
+
+            updateStats();
+        }
+
+        function skipQuestion() {
+            if (isWaitingNext) {
+                nextQuestion();
+                return;
+            }
+            const q = currentQuestions[currentIndex];
+            failedQuestions.push(q);
+            wrongCount++;
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            loadQuestion();
+        }
+
+        function showCompletedScreen() {
+            document.getElementById('quiz-card').style.display = 'none';
+            const screen = document.getElementById('completed-screen');
+            screen.classList.add('show');
+
+            const total = currentQuestions.length;
+            const accuracy = total > 0 ? Math.round((correctCount / total) * 100) : 0;
+
+            const iconEl = document.getElementById('completed-icon');
+            const titleEl = document.getElementById('completed-title');
+            const descEl = document.getElementById('completed-desc');
+
+            if (accuracy >= 80) {
+                iconEl.textContent = '🚀';
+                titleEl.textContent = '¡Estás listo para el Parcial!';
+            } else if (accuracy >= 60) {
+                iconEl.textContent = '📚';
+                titleEl.textContent = '¡Buen avance! Falta pulir algunos conceptos';
+            } else {
+                iconEl.textContent = '💪';
+                titleEl.textContent = '¡Sigue practicando para afianzar!';
+            }
+
+            descEl.innerHTML = `Acertaste <strong>${correctCount}</strong> de <strong>${total}</strong> preguntas (${accuracy}% de precisión).`;
+
+            const retryBtn = document.getElementById('btn-retry-failed');
+            if (failedQuestions.length > 0) {
+                retryBtn.style.display = 'inline-flex';
+                retryBtn.textContent = `Reintentar solo errores (${failedQuestions.length})`;
+            } else {
+                retryBtn.style.display = 'none';
+            }
+        }
+
+        function retryFailedOnly() {
+            currentQuestions = [...failedQuestions];
+            failedQuestions = [];
+            currentIndex = 0;
+            correctCount = 0;
+            wrongCount = 0;
+            loadQuestion();
+        }
+
+        function restartQuiz() {
+            if (selectedCategory === 'todas') {
+                currentQuestions = [...ALL_QUESTIONS];
+            } else {
+                currentQuestions = ALL_QUESTIONS.filter(q => q.category === selectedCategory);
+            }
+            failedQuestions = [];
+            currentIndex = 0;
+            correctCount = 0;
+            wrongCount = 0;
+            loadQuestion();
+        }
+
+        function setCategory(cat) {
+            selectedCategory = cat;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (cat === 'todas') {
+                currentQuestions = [...ALL_QUESTIONS];
+            } else {
+                currentQuestions = ALL_QUESTIONS.filter(q => q.category === cat);
+            }
+
+            failedQuestions = [];
+            currentIndex = 0;
+            correctCount = 0;
+            wrongCount = 0;
+            loadQuestion();
+        }
+
+        function escapeHtml(str) {
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Global key listener for Enter to advance
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && isWaitingNext) {
+                nextQuestion();
+            }
+        });
+
+        // Initialize
+        loadQuestion();
+    </script>
+</body>
+</html>

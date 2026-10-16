@@ -10,7 +10,8 @@ Simulador interactivo web para preparar el examen universitario sobre:
 
 ## Demo en Vivo (GitHub Pages)
 Puedes acceder y estudiar desde cualquier dispositivo o celular en:
-👉 **[https://jimy98.github.io/parcial1tp4/](https://jimy98.github.io/parcial1tp4/)**
+- 📝 **Simulador de Examen (80 preguntas):** [https://jimy98.github.io/parcial1tp4/](https://jimy98.github.io/parcial1tp4/)
+- ⚡ **Entrenador de Autocompletar Código:** [https://jimy98.github.io/parcial1tp4/autocompletar.html](https://jimy98.github.io/parcial1tp4/autocompletar.html)
 
 ## Características
 - 80 preguntas de preparación intensiva.

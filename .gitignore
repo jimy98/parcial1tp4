@@ -1,0 +1,8 @@
+# Repositorios y carpetas externas
+tup-programacion-IV-2026/
+repodel profe/
+
+# Borradores y PDFs
+*.pdf
+\!DOCTYPE html.txt
+inde.html
